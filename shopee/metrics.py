@@ -29,7 +29,7 @@ def calc_f1_score(df:pd.DataFrame, pair_df:pd.DataFrame) -> float:
         lambda _: " ".join(_)
     ).rename(columns={
         "candidate_posting_id": "predictions"
-    }, inplace=True)
+    })
     s = df.groupby("label_group")["posting_id"].apply(lambda _: " ".join(_))
     df["matches"] = df["label_group"].map(s)
     # F1
