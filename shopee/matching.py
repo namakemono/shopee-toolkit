@@ -57,11 +57,11 @@ def make_candidates(config, train_df:pd.DataFrame, test_df:pd.DataFrame, use_cac
             image_size      = image_size,
             weights_name    = weights_name
         )
-    train_image_embeddings = train_image_embeddings[train_df.index]
-    test_image_embeddings = shopee.image_embeddings.get_image_embeddings(
+    train_image_embeddings  = train_image_embeddings[train_df.index]
+    test_image_embeddings   = shopee.image_embeddings.get_image_embeddings(
         test_df,
-        image_size=image_size,
-        weights_name=weights_name
+        image_size          = image_size,
+        weights_name        = weights_name
     )
     image_embeddings = np.concatenate([
         train_image_embeddings,
