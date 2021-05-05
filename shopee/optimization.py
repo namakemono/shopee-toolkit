@@ -2,12 +2,16 @@ import numpy as np
 import pandas as pd
 import shopee
 
-def find_optimal_threshold(df:pd.DataFrame, pair_df:pd.DataFrame) -> float:
+def find_optimal_threshold(
+    df:pd.DataFrame,
+    pair_df:pd.DataFrame,
+    lb:float=0.1,
+    ub:float=0.9
+) -> float:
     def f(th):
         pair_df["prediction"] = (pair_df["confidence"] > th).astype(int)
         return shopee.metrics.calc_f1_score(df, pair_df)
         
-    lb, ub = 0.1, 0.9
     for k in range(10):
         th1 = (lb * 2 + ub) / 3
         th2 = (lb + ub * 2) / 3
