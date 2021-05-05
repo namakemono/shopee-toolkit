@@ -67,19 +67,31 @@ def run(
     test_pair_df = pair_df[is_test_data].reset_index(drop=True)
     test_pair_df["confidence"] = -1
 
-
     y_preda_list = []
+    
     X = train_pair_df[feature_names].values
     y = train_pair_df["matched"].values
     X_test = test_pair_df[feature_names].values
     oof = np.zeros(len(y))
 
-    to_posting_id = train_df.set_index("posting_id")["fold"].to_dict()
-    train_pair_df["fold_pid"] = train_pair_df["posting_id"].map(to_posting_id)
+    posting_id_to_fold = train_df.set_index("posting_id")["fold"].to_dict()
+    train_pair_df["fold_pid"] = train_pair_df["posting_id"].map(posting_id_to_fold)
+    train_pair_df["fold_cpid"] = train_pair_df["candidate_posting_id"].map(posting_id_to_fold)
     for kfold_index in range(num_kfolds):
         train_index = train_pair_df[(train_pair_df["fold_pid"] % num_kfolds) != kfold_index].index
         valid_index = train_pair_df[(train_pair_df["fold_pid"] % num_kfolds) == kfold_index].index
-        print("[%d]train: %d, valid:%d" % (kfold_index, len(train_index), len(valid_index)))
+       
+        # 分割前に構築
+        X_train, X_valid = X[train_index], X[valid_index]
+        y_train, y_valid = y[train_index], y[valid_index]
+
+        # 正例の重みを weight_rate, 不例を1にする
+        weight_rate = 3.
+        sample_weight = np.ones(y_train.shape)
+        sample_weight[y_train==1] = weight_rate
+        sample_weight_val = np.ones(y_valid.shape)
+        sample_weight_val[y_valid==1] = weight_rate
+        sample_weight_eval_set = [sample_weight, sample_weight_val]
 
         clf = xgb.XGBClassifier(
             objective       = "binary:logistic",
@@ -87,12 +99,17 @@ def run(
             n_estimators    = 1000
         )
         clf.fit(
-            X[train_index], y[train_index],
+            X_train, y_train,
             eval_set=[
-                (X[train_index], y[train_index]),
-                (X[valid_index], y[valid_index])
+                (X_train, y_train),
+                (X_valid, y_valid)
             ],
-            verbose=30
+            eval_metric             = "logloss",
+            verbose                 = 10,
+            early_stopping_rounds   = 20,
+            callbacks               = [],
+            sample_weight           = sample_weight, # クラス１の重みを２倍にする
+            sample_weight_eval_set  = sample_weight_eval_set,
         )
         oof[valid_index] = clf.predict_proba(X[valid_index])[:,1]
         y_preda = clf.predict_proba(X_test)[:,1]

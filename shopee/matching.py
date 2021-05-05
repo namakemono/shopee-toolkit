@@ -28,7 +28,7 @@ def to_distances(indices, embeddings):
         distances.append(distance)
     return distances
 
-def make_candidates(config, train_df:pd.DataFrame, test_df:pd.DataFrame):
+def make_candidates(config, train_df:pd.DataFrame, test_df:pd.DataFrame, use_cache:bool):
     max_candidates = config.max_candidates
     train_image_embeddings_filepath = config.train_image_embeddings_filepath
     image_size = config.image_size
@@ -47,9 +47,16 @@ def make_candidates(config, train_df:pd.DataFrame, test_df:pd.DataFrame):
     print("text indices", text_indices.shape)
     
     # 画像のembeddingsと候補抽出
-    train_image_embeddings = load_image_embeddings(
-        filepath=train_image_embeddings_filepath
-    )
+    if use_cache:
+        train_image_embeddings = load_image_embeddings(
+            filepath=train_image_embeddings_filepath
+        )
+    else:
+        train_image_embeddings = shopee.image_embeddings.get_image_embeddings(
+            train_df,
+            image_size      = image_size,
+            weights_name    = weights_name
+        )
     train_image_embeddings = train_image_embeddings[train_df.index]
     test_image_embeddings = shopee.image_embeddings.get_image_embeddings(
         test_df,
