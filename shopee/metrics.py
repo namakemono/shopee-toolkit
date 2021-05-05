@@ -19,11 +19,15 @@ def f1_score(y_true:pd.Series, y_pred:pd.Series):
     return f1
 
 def calc_f1_score(df:pd.DataFrame, pair_df:pd.DataFrame) -> float:
-    gdf = pair_df[pair_df["prediction"] == 1].groupby(
+    _df = pair_df[pair_df["prediction"] == 1]
+    if len(_df) == 0:
+        return 0
+    gdf = _df.groupby(
         "posting_id",
         as_index=False
-    )["candidate_posting_id"].apply(lambda _: " ".join(_))
-    gdf.rename(columns={
+    )["candidate_posting_id"].apply(
+        lambda _: " ".join(_)
+    ).rename(columns={
         "candidate_posting_id": "predictions"
     }, inplace=True)
     s = df.groupby("label_group")["posting_id"].apply(lambda _: " ".join(_))
