@@ -35,7 +35,7 @@ def get_efficientnet_backbone():
     backbone = tf.keras.models.Model(inputs, h)
     return backbone
 
-def get_image_embeddings(entry_id:str, df:pd.DataFrame) -> np.ndarray:
+def get_image_embeddings(df:pd.DataFrame, image_size:int, weights_name:str) -> np.ndarray:
     """
     データから画像特徴量を抽出する
 
@@ -43,30 +43,24 @@ def get_image_embeddings(entry_id:str, df:pd.DataFrame) -> np.ndarray:
     ----------
     df:pd.DataFrame
     image_size:int
-    entry_id:str 画像エンコーダーの重み(cf. shopee/registry.py)
+    weights_name:str 画像エンコーダーの重み(cf. shopee/registry.py)
 
     Returns
     -------
     embeddings: np.ndarray 画像特徴量
     """
-    entry = shopee.registry.get_entry_by_id(entry_id)
-    if entry.model_type == "keras-origin":
-        print(entry.to_dict())
-        model = entry.classname(
-            include_top = False,
-            pooling     = "avg",
-            weights     = entry.weights_filepath
+    if weights_name in ["mobilenet_v2_weights_keras"]:
+        model = tf.keras.applications.MobileNetV2(
+            include_top=False,
+            pooling="avg",
+            weights="imagenet"
         )
-    elif entry.id in ["effnet_b3_swav_weights_keras"]:
-        model = get_efficientnet_backbone()
-        model.load_weights(entry.weighs_filepath)
-    else:
-        raise ValueError(f"Undefined weights name: {entry_id}")
+        preprocess_input = tf.keras.applications.mobilenet.preprocess_input
     embeddings = model.predict(
         predict_generator(
-            df                  = df, 
-            image_size          = entry.image_size,
-            preprocess_input    = entry.preprocess_input
+            df=df, 
+            image_size=image_size,
+            preprocess_input=preprocess_input
         ),
         verbose=True
     )

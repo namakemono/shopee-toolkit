@@ -3,7 +3,9 @@ import numpy as np
 import scipy as sp
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
+from typing import List
 import shopee
+
 
 def get_neighbors(embeddings, max_candidates:int, chunk_size:int=100):
     n = embeddings.shape[0]
@@ -26,7 +28,7 @@ def to_distances(indices, embeddings):
         distances.append(distance)
     return distances
 
-def get_tfidf(
+def get_tfidf_embeddings(
     train_df:pd.DataFrame,
     test_df:pd.DataFrame
 ):
@@ -35,23 +37,25 @@ def get_tfidf(
     text_embeddings = shopee.text_embeddings.get_text_embeddings(df, tfidf)
     return text_embeddings
 
-def get_effnet_b3(
+def get_image_embeddings(
+    entry_id:str,  
     train_df:pd.DataFrame,      # 訓練データ
     test_df:pd.DataFrame,       # テストデータ
-    image_size:int,             # 画像サイズ(256, 512)
-    weights_name:str,           # 重みの名称(cf. shopee.registry)
     normed:bool=True,           # 正規化するかどうか
 ) -> np.ndarray:
-    train_embeddings = shopee.image_embeddings.get_image_embeddings(
-        train_df,
-        image_size      = image_size,
-        weights_name    = weights_name
-    )
-    train_embeddings = train_embeddings[train_df.index]
+    entry = shopee.registry.get_entry_by_id(entry_id)
+    if os.path.exists(entry.embeddings_filepath):
+        train_embeddings = shopee.image_embeddings.load_image_embeddings(
+            entry.embeddings_filepath
+        )
+    else:
+        train_embeddings = shopee.image_embeddings.get_image_embeddings(
+            entry_id    = entry_id,
+            df          = train_df,
+        )
     test_embeddings = shopee.image_embeddings.get_image_embeddings(
-        test_df,
-        image_size      = image_size,
-        weights_name    = weights_name
+        entry_id    = entry_id,
+        df          = test_df,
     )
     embeddings = np.concatenate([
         train_embeddings,
@@ -66,7 +70,7 @@ def make_candidates(
     train_df:pd.DataFrame,
     test_df:pd.DataFrame,
     use_cache:bool,
-    encoder_names=["effnet_b3", "tfidf"]
+    entry_ids:List[str]
  ):
     max_candidates = config.max_candidates
     train_image_embeddings_filepath = config.train_image_embeddings_filepath
@@ -75,14 +79,12 @@ def make_candidates(
 
     # embeddingsの算出
     embeddings_list = []
-    for encoder_name in encoder_names:
-        print(f"Calculate embeddings with {encoder_name}")
-        if encoder_name == "tfidf":
-            embeddings = get_tfidf(train_df, test_df)
-        elif encoder_name == "effnet_b3":
-            embeddings = get_effnet_b3(train_df, test_df, image_size, weights_name)
+    for entry_id in entry_ids:
+        print(f"Calculate embeddings with {entry_id}")
+        if entry_id == "tfidf-v1":
+            embeddings = get_tfidf_embeddings(train_df, test_df)
         else:
-            raise ValueError(f"Undefined encoder name: {encoder_name}")
+            embeddings = get_image_embeddings(entry_id, train_df, test_df)
         embeddings_list.append(embeddings)
     
     # 候補点の近傍となる要素を抽出
@@ -94,7 +96,7 @@ def make_candidates(
         )
         indices_list.append(indices)
    
-    # マージして候補となるインデックスを
+    # マージして候補となるインデックスを作る
     candidate_indices = indices_list[0]
     for indices in indices_list:
         candidate_indices = [shopee.utils.merge(candidate_indices[i], indices[i]) for i in range(len(indices))]
@@ -127,7 +129,7 @@ def make_candidates(
                 "matched": matched,
             }
             for k, distances in enumerate(distances_list):
-                record[f"feat_{encoder_names[k]}"] = distances[i][j]
+                record[f"feat_{entry_ids[k]}"] = distances[i][j]
             records.append(record)
     pair_df = pd.DataFrame(records)
     return pair_df

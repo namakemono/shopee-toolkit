@@ -16,28 +16,18 @@ def load_image_embeddings(filepath:str) -> np.ndarray:
         raise ValueError(f"Undefined extensions type: {filepath}")
 
 def get_image_embeddings(
-    df:pd.DataFrame,
-    image_size:int,
-    weights_name:str,
+    entry_id: str,
+    df: pd.DataFrame,
 ):
-    if weights_name in [
-        "effnet_b3_weights_keras",
-        "effnet_b7_weights_keras",
-        "effnet_b3_swav_weights_keras",
-        "effnet_b0_ns_weights_keras",
-        "effnet_b3_ns_weights_keras",
-    ]:
-        return shopee.image_embeddings_keras.get_image_embeddings(
-            df=df,
-            image_size=image_size,
-            weights_name=weights_name,
-        )
-    elif weights_name in ["effnet-b3-arcface-pytorch"]:
+    if entry_id in ["effnet_b3_arcface_pytorch"]:
+        entry = shopee.registry.get_entry_by_id(entry_id)
         get_image_embeddings = shopee.image_embeddings_pytorch.get_image_embeddings(
-            df,
-            image_size
+            df              = df,
+            image_size      = entry["image_size"]
         )
     else:
-        raise ValueError(f"Undefined engine name: {weights_name}")
-
+        return shopee.image_embeddings_keras.get_image_embeddings(
+            entry_id        = entry_id, 
+            df              = df,
+        )
 
