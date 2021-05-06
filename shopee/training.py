@@ -15,7 +15,13 @@ def add_features(df:pd.DataFrame, to_image_phash) -> pd.DataFrame:
     df["posting_id_phash"] = df["posting_id"].map(to_image_phash)
     df["candidate_posting_id_phash"] = df["candidate_posting_id"].map(to_image_phash)
     df["edit_distance"] = df.apply(to_edit_distance, axis=1)
-    df["img_text_feat"] = df["img_feat"]*df["text_feat"]
+    feature_columns = [c for c in df.columns if "feat_" in c]
+    n = len(feature_columns)
+    for i in range(n):
+        for j in range(i+1, n):
+            a = feature_columns[i]
+            b = feature_columns[j]
+            df[f"{a}_x_{b}"] = df[a] * df[b]
     return df
 
 def add_graph_features(pair_df:pd.DataFrame):
