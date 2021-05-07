@@ -1,11 +1,20 @@
 import tensorflow as tf
 
 class TextEntry:
-    def __init__(self, id:str):
+    def __init__(self,
+        id:str,
+        model_type:str,
+        pretrained_model_directory:str
+    ):
         self.id = id
+        self.model_type = model_type
+        self.pretrained_model_directory = pretrained_model_directory
+
     def to_dict(self):
         return {
-            "id":   self.id
+            "id":                           self.id,
+            "model_type":                   self.model_type,
+            "pretrained_model_directory":   self.pretrained_model_directory,
         }
 
 class ImageEntry:
@@ -94,8 +103,25 @@ def get_entries():
             preprocess_input    = tf.keras.applications.mobilenet_v2.preprocess_input
         ),
         TextEntry(
-            id                  = "tfidf-v1",
-        )
+            id                              = "tfidf-v1",
+            model_type                      = "tfidf",
+            pretrained_model_directory      = None
+        ),
+        TextEntry(
+            id                              = "roberta-base",
+            model_type                      = "bert",
+            pretrained_model_directory      = "../input/all-in-one-packages/models/roberta-base",
+        ),
+        TextEntry(
+            id                              = "bert-base-uncased",
+            model_type                      = "bert",
+            pretrained_model_directory      = "../input/all-in-one-packages/models/bert-base-uncased",
+        ),
+        TextEntry(
+            id                              = "bert-base-multilingual-uncased",
+            model_type                      = "bert",
+            pretrained_model_directory      = "../input/all-in-one-packages/models/bert-base-multilingual-uncased",
+        ),
     ]
 
 def get_entry_by_id(id):

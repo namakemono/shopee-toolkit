@@ -1,4 +1,5 @@
 import os
+import sys
 import numpy as np
 import scipy as sp
 import pandas as pd
@@ -6,6 +7,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from typing import List
 import shopee
 from .candidate_extraction import get_neighbors
+from . import text_embeddings_tfidf
+from . import text_embeddings_bert
 
 def to_distances(indices, embeddings):
     n = len(indices)
@@ -17,16 +20,28 @@ def to_distances(indices, embeddings):
         distances.append(distance)
     return distances
 
-def get_tfidf_embeddings(
+def get_text_embeddings(
+    debug:bool,
+    entry_id:str,
     train_df:pd.DataFrame,
-    test_df:pd.DataFrame
+    test_df:pd.DataFrame,
+    max_seq_length:int
 ):
+    entry = shopee.registry.get_entry_by_id(entry_id)
     df = pd.concat([train_df, test_df]).reset_index(drop=True)
-    tfidf = TfidfVectorizer().fit(df["title"].str.lower())
-    text_embeddings = shopee.text_embeddings.get_text_embeddings(df, tfidf)
-    return text_embeddings
+    if "tfidf" in entry_id:
+        embeddings = text_embeddings_tfidf.get_text_embeddings(df)
+    elif "bert" in entry_id:
+        embeddings = text_embeddings_bert.get_text_embeddings(
+            df                          = df,
+            pretrained_model_directory  = entry.pretrained_model_directory,
+            max_seq_length              = max_seq_length
+        )
+        embeddings = shopee.normalization.normalize(embeddings)
+    return embeddings
 
 def get_image_embeddings(
+    debug:bool,
     entry_id:str,  
     train_df:pd.DataFrame,      # 訓練データ
     test_df:pd.DataFrame,       # テストデータ
@@ -34,7 +49,7 @@ def get_image_embeddings(
     normed:bool=True,           # 正規化するかどうか
 ) -> np.ndarray:
     entry = shopee.registry.get_entry_by_id(entry_id)
-    if use_cache and os.path.exists(entry.train_embeddings_filepath):
+    if not debug and use_cache and os.path.exists(entry.train_embeddings_filepath):
         train_embeddings = shopee.image_embeddings.load_image_embeddings(
             entry.train_embeddings_filepath
         )
@@ -43,7 +58,8 @@ def get_image_embeddings(
             entry_id    = entry_id,
             df          = train_df,
         )
-        if train_embeddings.shape[0] > 20000: # デバッグ時は保存しない
+        if not debug:
+            # Kaggle kernelやデバッグ時は保存しない
             print(f"Save to {entry.train_embeddings_filepath}") 
             np.save(entry.train_embeddings_filepath, train_embeddings)
     test_embeddings = shopee.image_embeddings.get_image_embeddings(
@@ -59,20 +75,30 @@ def get_image_embeddings(
     return embeddings
 
 def make_candidates(
+    debug:bool,
     train_df:pd.DataFrame,
     test_df:pd.DataFrame,
     use_cache:bool,
     entry_ids:List[str],
-    max_candidates:int
+    max_candidates:int,
+    max_seq_length:int
  ) -> pd.DataFrame:
     # embeddingsの算出
     embeddings_list = []
     for entry_id in entry_ids:
         print(f"Calculate embeddings with {entry_id}")
-        if entry_id == "tfidf-v1":
-            embeddings = get_tfidf_embeddings(train_df, test_df)
+        entry = shopee.registry.get_entry_by_id(entry_id)
+        if type(entry) == shopee.registry.TextEntry:
+            embeddings = get_text_embeddings(
+                debug           = debug,
+                entry_id        = entry_id,
+                train_df        = train_df,
+                test_df         = test_df,
+                max_seq_length  = max_seq_length
+            )
         else:
             embeddings = get_image_embeddings(
+                debug       = debug,
                 entry_id    = entry_id,
                 train_df    = train_df,
                 test_df     = test_df,
