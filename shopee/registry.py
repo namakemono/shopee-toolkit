@@ -22,17 +22,17 @@ class ImageEntry:
         self.model_type = model_type
         self.weights_filepath = weights_filepath
         self.image_size = image_size
-        self.embeddings_filepath = "./data/{self.id}_{self.image_size}x{self.image_size}.csv"
+        self.train_embeddings_filepath = f"./data/train-embeddings-{self.id}.npy"
         self.preprocess_input = preprocess_input
 
     def to_dict(self):
         return {
-            "id":                   self.id,
-            "classname":            str(self.classname),
-            "model_type":           self.model_type,
-            "weights_filepath":     self.weights_filepath,
-            "embeddings_filepath":  self.embeddings_filepath,
-            "image_size":           self.image_size
+            "id":                           self.id,
+            "classname":                    str(self.classname),
+            "model_type":                   self.model_type,
+            "weights_filepath":             self.weights_filepath,
+            "train_embeddings_filepath":    self.train_embeddings_filepath,
+            "image_size":                   self.image_size
         }
 
 def get_entries():

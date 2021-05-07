@@ -5,18 +5,7 @@ import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from typing import List
 import shopee
-
-
-def get_neighbors(embeddings, max_candidates:int, chunk_size:int=100):
-    n = embeddings.shape[0]
-    max_candidates = min(n, max_candidates)
-    indices = np.zeros((n, max_candidates), dtype=np.int32)
-    for i in range(0, n, chunk_size):
-        similarity = embeddings[i:i+chunk_size] @ embeddings.T
-        if type(similarity) != np.ndarray:
-            similarity = similarity.toarray()
-        indices[i:i+chunk_size] = np.argsort(-similarity, axis=1)[:,:max_candidates]
-    return indices
+from .candidate_extraction import get_neighbors
 
 def to_distances(indices, embeddings):
     n = len(indices)
@@ -41,18 +30,22 @@ def get_image_embeddings(
     entry_id:str,  
     train_df:pd.DataFrame,      # 訓練データ
     test_df:pd.DataFrame,       # テストデータ
+    use_cache:bool,             # 保存済みの訓練データを使うかどうか
     normed:bool=True,           # 正規化するかどうか
 ) -> np.ndarray:
     entry = shopee.registry.get_entry_by_id(entry_id)
-    if os.path.exists(entry.embeddings_filepath):
+    if use_cache and os.path.exists(entry.train_embeddings_filepath):
         train_embeddings = shopee.image_embeddings.load_image_embeddings(
-            entry.embeddings_filepath
+            entry.train_embeddings_filepath
         )
     else:
         train_embeddings = shopee.image_embeddings.get_image_embeddings(
             entry_id    = entry_id,
             df          = train_df,
         )
+        if train_embeddings.shape[0] > 20000: # デバッグ時は保存しない
+            print(f"Save to {entry.train_embeddings_filepath}") 
+            np.save(entry.train_embeddings_filepath, train_embeddings)
     test_embeddings = shopee.image_embeddings.get_image_embeddings(
         entry_id    = entry_id,
         df          = test_df,
@@ -79,7 +72,12 @@ def make_candidates(
         if entry_id == "tfidf-v1":
             embeddings = get_tfidf_embeddings(train_df, test_df)
         else:
-            embeddings = get_image_embeddings(entry_id, train_df, test_df)
+            embeddings = get_image_embeddings(
+                entry_id    = entry_id,
+                train_df    = train_df,
+                test_df     = test_df,
+                use_cache   = use_cache
+            )
         embeddings_list.append(embeddings)
     
     # 候補点の近傍となる要素を抽出
@@ -91,7 +89,7 @@ def make_candidates(
         )
         indices_list.append(indices)
    
-    # マージして候補となるインデックスを作る
+    # マージして候補となるインデックスセットを作る
     candidate_indices = indices_list[0]
     for indices in indices_list:
         candidate_indices = [shopee.utils.merge(candidate_indices[i], indices[i]) for i in range(len(indices))]
