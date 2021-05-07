@@ -66,17 +66,12 @@ def get_image_embeddings(
     return embeddings
 
 def make_candidates(
-    config,
     train_df:pd.DataFrame,
     test_df:pd.DataFrame,
     use_cache:bool,
-    entry_ids:List[str]
+    entry_ids:List[str],
+    max_candidates:int
  ):
-    max_candidates = config.max_candidates
-    train_image_embeddings_filepath = config.train_image_embeddings_filepath
-    image_size = config.image_size
-    weights_name = config.weights_name
-
     # embeddingsの算出
     embeddings_list = []
     for entry_id in entry_ids:
