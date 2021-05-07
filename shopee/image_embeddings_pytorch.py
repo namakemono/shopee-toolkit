@@ -43,7 +43,8 @@ class Config:
     num_workers = 4
     batch_size = 64
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    weights_filepath = shopee.registry.get_value("effnet_b3_arcface_256x256")
+    # TODO(nishimori-m): 重みのパスを追加する
+    weights_filepath = "" # shopee.registry.get_value("effnet_b3_arcface_256x256")
     model_params = {
         'n_classes':11014,
         'model_name': 'efficientnet_b3', #'resnext50_32x4d'

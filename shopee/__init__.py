@@ -1,4 +1,5 @@
 from . import normalization
+from . import memory_reduction
 from . import registry
 from . import datasets
 from . import image_embeddings_pytorch

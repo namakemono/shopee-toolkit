@@ -1,3 +1,5 @@
+
+from typing import List
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import GroupKFold, KFold
@@ -5,58 +7,17 @@ import networkx as nx
 import xgboost as xgb
 import Levenshtein
 import shopee
-
-def to_edit_distance(row:dict) -> float:
-    a = row["posting_id_phash"]
-    b = row["candidate_posting_id_phash"]
-    return Levenshtein.distance(a, b)
-
-def add_features(df:pd.DataFrame, to_image_phash) -> pd.DataFrame:
-    df["posting_id_phash"] = df["posting_id"].map(to_image_phash)
-    df["candidate_posting_id_phash"] = df["candidate_posting_id"].map(to_image_phash)
-    df["edit_distance"] = df.apply(to_edit_distance, axis=1)
-    feature_columns = [c for c in df.columns if "feat_" in c]
-    n = len(feature_columns)
-    for i in range(n):
-        for j in range(i+1, n):
-            a = feature_columns[i]
-            b = feature_columns[j]
-            df[f"{a}_x_{b}"] = df[a] * df[b]
-    return df
-
-def add_graph_features(pair_df:pd.DataFrame):
-    print("graph features ...")
-    # グラフ構築
-    G = nx.Graph()
-    for idx in range(len(pair_df)):
-        # posting_id から candidate_positing id への辺
-        G.add_edge(pair_df.posting_id[idx], pair_df.candidate_posting_id[idx])
-
-    # 連結成分の数
-    cc_num_dict = {}
-    for cc in list(nx.connected_components(G)):
-        cc_num = len(cc)
-        for posting_id in cc:
-            cc_num_dict[posting_id] = cc_num
-    # 2つのペアは同じ連結成分内にあるので一つだけで十分
-    pair_df["cc_num"] = pair_df["posting_id"].map(cc_num_dict)
-
-    # 次数中心性
-    degree_cent_dict = nx.degree_centrality(G)
-    pair_df["degree_centrality_pid"] = pair_df["posting_id"].map(degree_cent_dict)
-    pair_df["degree_centrality_cpid"] = pair_df["candidate_posting_id"].map(degree_cent_dict)
-    return pair_df
+from .feature_extraction import to_edit_distance, add_features, add_graph_features
 
 def run(
-    config,
     train_df:pd.DataFrame,
     test_df:pd.DataFrame,
-    pair_df:pd.DataFrame
+    pair_df:pd.DataFrame,
+    weight_rate:float,
+    use_graph_features:bool,
+    num_kfolds:int,
+    feature_names:List[str],
 ):
-    use_graph_features = config.use_graph_features
-    num_kfolds = config.num_kfolds
-    feature_names = config.feature_names
-
     df = pd.concat([train_df, test_df]).reset_index(drop=True)
     
     # 特徴量の追加
@@ -92,7 +53,6 @@ def run(
         y_train, y_valid = y[train_index], y[valid_index]
 
         # 正例の重みを weight_rate, 不例を1にする
-        weight_rate = 3.
         sample_weight = np.ones(y_train.shape)
         sample_weight[y_train==1] = weight_rate
         sample_weight_val = np.ones(y_valid.shape)
@@ -114,7 +74,7 @@ def run(
             verbose                 = 10,
             early_stopping_rounds   = 20,
             callbacks               = [],
-            sample_weight           = sample_weight, # クラス１の重みを２倍にする
+            sample_weight           = sample_weight,
             sample_weight_eval_set  = sample_weight_eval_set,
         )
         oof[valid_index] = clf.predict_proba(X[valid_index])[:,1]
