@@ -81,7 +81,8 @@ def make_candidates(
     use_cache:bool,
     entry_ids:List[str],
     max_candidates:int,
-    max_seq_length:int
+    max_seq_length:int,
+    use_fast_neighbors:bool=False, # 候補点抽出時にGPUを使うかどうか(メモリ使用量大)
  ) -> pd.DataFrame:
     # embeddingsの算出
     embeddings_list = []
@@ -111,7 +112,8 @@ def make_candidates(
     for embeddings in embeddings_list:
         indices = get_neighbors(
             embeddings=embeddings,
-            max_candidates=max_candidates
+            max_candidates=max_candidates,
+            use_fast=use_fast_neighbors
         )
         indices_list.append(indices)
    

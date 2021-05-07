@@ -31,7 +31,7 @@ class ImageEntry:
         self.model_type = model_type
         self.weights_filepath = weights_filepath
         self.image_size = image_size
-        self.train_embeddings_filepath = f"./data/train-embeddings-{self.id}.npy"
+        self.train_embeddings_filepath = f"../input/shopee-train-embeddings/train-embeddings-{self.id}.npy"
         self.preprocess_input = preprocess_input
 
     def to_dict(self):
