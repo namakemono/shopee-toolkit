@@ -71,7 +71,7 @@ def make_candidates(
     use_cache:bool,
     entry_ids:List[str],
     max_candidates:int
- ):
+ ) -> pd.DataFrame:
     # embeddingsの算出
     embeddings_list = []
     for entry_id in entry_ids:

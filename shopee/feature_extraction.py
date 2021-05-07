@@ -1,5 +1,9 @@
 import numpy as np
 import pandas as pd
+import gc
+import Levenshtein
+import networkx as nx
+import igraph
 
 def to_edit_distance(row:dict) -> float:
     a = row["posting_id_phash"]
