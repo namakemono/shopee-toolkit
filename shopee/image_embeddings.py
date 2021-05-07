@@ -19,15 +19,8 @@ def get_image_embeddings(
     entry_id: str,
     df: pd.DataFrame,
 ):
-    if entry_id in ["effnet_b3_arcface_pytorch"]:
-        entry = shopee.registry.get_entry_by_id(entry_id)
-        get_image_embeddings = shopee.image_embeddings_pytorch.get_image_embeddings(
-            df              = df,
-            image_size      = entry["image_size"]
-        )
-    else:
-        return shopee.image_embeddings_keras.get_image_embeddings(
-            entry_id        = entry_id, 
-            df              = df,
-        )
+    return shopee.image_embeddings_keras.get_image_embeddings(
+        entry_id        = entry_id, 
+        df              = df,
+    )
 
