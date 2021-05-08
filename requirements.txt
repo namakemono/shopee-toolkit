@@ -1,7 +1,0 @@
-numpy
-pandas
-pickle
-scikit-learn
-tensorflow
-torch
-xgboost
