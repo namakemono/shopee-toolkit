@@ -42,7 +42,7 @@ def get_text_embeddings(
 
 def get_image_embeddings(
     debug:bool,
-    entry_id:str,  
+    entry_id:str,
     train_df:pd.DataFrame,      # 訓練データ
     test_df:pd.DataFrame,       # テストデータ
     use_cache:bool,             # 保存済みの訓練データを使うかどうか
@@ -61,7 +61,7 @@ def get_image_embeddings(
         )
         if (not debug) and (not "kaggle_web_client" in sys.modules):
             # Kaggle kernelやデバッグ時は保存しない
-            print(f"Save to {entry.train_embeddings_filepath}") 
+            print(f"Save to {entry.train_embeddings_filepath}")
             np.save(entry.train_embeddings_filepath, train_embeddings)
     test_embeddings = shopee.image_embeddings.get_image_embeddings(
         entry_id    = entry_id,
@@ -107,7 +107,7 @@ def make_candidates(
                 use_cache   = use_cache
             )
         embeddings_list.append(embeddings)
-    
+
     # 候補点の近傍となる要素を抽出
     indices_list = []
     for embeddings in embeddings_list:
@@ -117,7 +117,7 @@ def make_candidates(
             use_fast=use_fast_neighbors
         )
         indices_list.append(indices)
-   
+
     # マージして候補となるインデックスセットを作る
     candidate_indices = indices_list[0]
     for indices in indices_list:
@@ -155,5 +155,3 @@ def make_candidates(
             records.append(record)
     pair_df = pd.DataFrame(records)
     return pair_df
-
-

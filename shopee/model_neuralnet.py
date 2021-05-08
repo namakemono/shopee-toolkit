@@ -170,7 +170,7 @@ class NeuralNet():
         weights = torch.tensor([1.0, params["weight_rate"]]).to(DEVICE)
         loss_fn = nn.CrossEntropyLoss(weight=weights)
         early_step = 0
-        best_loss = 0
+        best_loss = 1e9
         for epoch in range(EPOCHS):
             train_loss = train_fn(model, optimizer,scheduler, loss_fn, trainloader, DEVICE)
             valid_loss, valid_preds = valid_fn(model, loss_fn, validloader, DEVICE)
