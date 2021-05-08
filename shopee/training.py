@@ -45,8 +45,30 @@ def run(
     train_pair_df["fold_pid"] = train_pair_df["posting_id"].map(posting_id_to_fold)
     train_pair_df["fold_cpid"] = train_pair_df["candidate_posting_id"].map(posting_id_to_fold)
     for kfold_index in range(num_kfolds):
-        train_index = train_pair_df[(train_pair_df["fold_pid"] % num_kfolds) != kfold_index].index
-        valid_index = train_pair_df[(train_pair_df["fold_pid"] % num_kfolds) == kfold_index].index
+        # ペア時にリークが入らないよう分割
+        # 学習に使うだけで推論だと別途対応する必要あり
+        if True:
+            # validが入らない
+            train_fold_list = [i for i in train_pair_df["fold_pid"].unique() if (i % num_kfolds != kfold_index)]
+            pid_train = train_pair_df["fold_pid"].isin(train_fold_list)
+            pid_valid = train_pair_df["fold_pid"] == kfold_index
+            pid_test = train_pair_df["posting_id"].str.contains("test_", na=False)
+            cpid_train = train_pair_df["fold_cpid"].isin(train_fold_list)
+            cpid_valid = train_pair_df["fold_cpid"] == kfold_index
+            cpid_test = train_pair_df["candidate_posting_id"].str.contains("test_", na=False)
+            train_index = train_pair_df[
+                (pid_train & cpid_train) | 
+                (pid_train & cpid_test) |
+                (pid_test & cpid_train)
+            ].index
+            valid_index = train_pair_df[
+                (pid_valid & cpid_valid) |
+                (pid_valid & cpid_test) |
+                (pid_test & cpid_valid)
+            ].index
+        else: # pidとcpidの反転例が存在しちゃってまずいペア
+            train_index = train_pair_df[(train_pair_df["fold_pid"] % num_kfolds) != kfold_index].index
+            valid_index = train_pair_df[(train_pair_df["fold_pid"] % num_kfolds) == kfold_index].index
        
         # 分割前に構築
         X_train, X_valid = X[train_index], X[valid_index]
@@ -77,6 +99,8 @@ def run(
             sample_weight           = sample_weight,
             sample_weight_eval_set  = sample_weight_eval_set,
         )
+        # pidがvalidを含む項目を全て予測に入れる
+        valid_index = train_pair_df[(train_pair_df["fold_pid"] % num_kfolds) == kfold_index].index
         oof[valid_index] = clf.predict_proba(X[valid_index])[:,1]
         y_preda = clf.predict_proba(X_test)[:,1]
         y_preda_list.append(y_preda)

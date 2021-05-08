@@ -50,6 +50,7 @@ def get_image_embeddings(
 ) -> np.ndarray:
     entry = shopee.registry.get_entry_by_id(entry_id)
     if not debug and use_cache and os.path.exists(entry.train_embeddings_filepath):
+        print(f"Load from {entry.train_embeddings_filepath}")
         train_embeddings = shopee.image_embeddings.load_image_embeddings(
             entry.train_embeddings_filepath
         )
@@ -58,7 +59,7 @@ def get_image_embeddings(
             entry_id    = entry_id,
             df          = train_df,
         )
-        if not debug:
+        if (not debug) and (not "kaggle_web_client" in sys.modules):
             # Kaggle kernelやデバッグ時は保存しない
             print(f"Save to {entry.train_embeddings_filepath}") 
             np.save(entry.train_embeddings_filepath, train_embeddings)
