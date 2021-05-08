@@ -2,3 +2,6 @@ build
 dist
 shopee.egg-info
 __pycache__
+*.zip
+*.pyc
+*.swp
