@@ -6,7 +6,11 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 
 def get_text_embeddings(df:pd.DataFrame) -> np.ndarray:
     texts = df["title"].apply(clean_text)
-    embeddings = TfidfVectorizer().fit_transform(texts)
+    embeddings = TfidfVectorizer(
+        stop_words='english',
+        binary=True,
+        max_features=25000
+    ).fit_transform(texts)
     print("vocab size: %d" % embeddings.shape[1])
     return embeddings
 
