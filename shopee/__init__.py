@@ -1,7 +1,9 @@
+from . import utils
 from . import normalization
 from . import memory_reduction
 from . import registry
 from . import datasets
+from . import feature_extraction
 from . import image_embeddings_pytorch
 from . import image_embeddings_keras
 from . import image_embeddings
@@ -10,5 +12,3 @@ from . import matching
 from . import training
 from . import optimization
 from . import metrics
-from . import utils
-
