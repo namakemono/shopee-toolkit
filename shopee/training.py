@@ -229,7 +229,7 @@ def train(
             y_preda_list.append(y_preda)
 
         elif model_name=="nn":
-            model_params["weight_rate"] = weight_rate
+            nn_params["weight_rate"] = weight_rate
             # pidがvalidを含む項目を全て予測に入れる
             allvalid_index = train_pair_df[(train_pair_df["fold_pid"] % num_kfolds) == kfold_index].index
             X_allvalid = X[allvalid_index]
@@ -243,7 +243,7 @@ def train(
                 y_valid,
                 X_test,
                 X_allvalid,
-                model_params
+                nn_params
             )
             oof[allvalid_index] = y_allvalid_pred[:,1]
             y_preda_list.append(y_pred[:,1])

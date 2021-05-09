@@ -9,6 +9,9 @@ from torch.utils.data import DataLoader, Dataset
 import torch.optim as optim
 import torch.nn.functional as F
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, CosineAnnealingLR, ReduceLROnPlateau
+from sklearn.metrics import f1_score
+
+
 
 def seed_torch(seed=42):
     random.seed(seed)
@@ -87,6 +90,7 @@ def train_fn(model, optimizer, scheduler, loss_fn, dataloader, device):
         optimizer.zero_grad()
         inputs, targets = data['x'].to(device), data['y'].to(device)
         outputs = model(inputs)
+        outputs = torch.clamp(outputs, min=-5.0, max=5.0)
         loss = loss_fn(outputs, targets)
         loss.backward()
         optimizer.step()
@@ -103,7 +107,14 @@ def valid_fn(model, loss_fn, dataloader, device):
     for data in dataloader:
         inputs, targets = data['x'].to(device), data['y'].to(device)
         outputs = model(inputs)
+        outputs = torch.clamp(outputs, min=-5.0, max=5.0)
         loss = loss_fn(outputs, targets)
+        if loss.item()>5.:
+            print(torch.max(outputs,axis=0))
+            print(torch.max(outputs,axis=1))
+            print(loss.item())
+            print(outputs)
+            print(targets)
         final_loss += loss.item()
         valid_preds.append(outputs.sigmoid().detach().cpu().numpy())
     final_loss /= len(dataloader)
@@ -117,6 +128,7 @@ def inference_fn(model, dataloader, device):
         inputs = data['x'].to(device)
         with torch.no_grad():
             outputs = model(inputs)
+        outputs = torch.clamp(outputs, min=-5.0, max=5.0)
         preds.append(outputs.sigmoid().detach().cpu().numpy())
     preds = np.concatenate(preds)
     return preds
@@ -174,7 +186,6 @@ class NeuralNet():
         for epoch in range(EPOCHS):
             train_loss = train_fn(model, optimizer,scheduler, loss_fn, trainloader, DEVICE)
             valid_loss, valid_preds = valid_fn(model, loss_fn, validloader, DEVICE)
-
             print(f"FOLD:{self.fold_num}, EPOCH: {epoch}, train_loss: {train_loss:.4f}, valid_loss: {valid_loss:.4f}")
 
             if valid_loss < best_loss:
