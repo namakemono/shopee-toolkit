@@ -112,8 +112,6 @@ def valid_fn(model, loss_fn, dataloader, device):
         #outputs = torch.clamp(outputs, min=-5.0, max=5.0)
         loss = loss_fn(outputs, targets)
         final_loss += loss.item()
-        if loss.item()>3:
-            print(loss.item())
         valid_preds.append(outputs.sigmoid().detach().cpu().numpy())
     final_loss /= len(dataloader)
     valid_preds = np.concatenate(valid_preds)
