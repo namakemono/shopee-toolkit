@@ -11,12 +11,10 @@ def reduce_mem_usage(props):
             IsInt = False
             mx = props[col].max()
             mn = props[col].min()
-            '''
             # Integer does not support NA, therefore, NA needs to be filled
             if not np.isfinite(props[col]).all():
-                NAlist.append(col)
+                #NAlist.append(col)
                 props[col].fillna(mn-1,inplace=True)
-            '''
             # test if column can be converted to an integer
             asint = props[col].fillna(0).astype(np.int64)
             result = (props[col] - asint)
