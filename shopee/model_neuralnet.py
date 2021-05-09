@@ -80,6 +80,7 @@ class NNModel(nn.Module):
         x = self.batch_norm3(x)
         x = self.dropout3(x)
         x = self.dense3(x)
+        x = torch.clamp(x, min=-5.0, max=5.0)
         return x
 
 # train,validation,inference
@@ -90,7 +91,7 @@ def train_fn(model, optimizer, scheduler, loss_fn, dataloader, device):
         optimizer.zero_grad()
         inputs, targets = data['x'].to(device), data['y'].to(device)
         outputs = model(inputs)
-        outputs = torch.clamp(outputs, min=-5.0, max=5.0)
+        #outputs = torch.clamp(outputs, min=-5.0, max=5.0)
         loss = loss_fn(outputs, targets)
         loss.backward()
         optimizer.step()
@@ -106,10 +107,13 @@ def valid_fn(model, loss_fn, dataloader, device):
     valid_preds = []
     for data in dataloader:
         inputs, targets = data['x'].to(device), data['y'].to(device)
-        outputs = model(inputs)
-        outputs = torch.clamp(outputs, min=-5.0, max=5.0)
+        with torch.no_grad():
+            outputs = model(inputs)
+        #outputs = torch.clamp(outputs, min=-5.0, max=5.0)
         loss = loss_fn(outputs, targets)
         final_loss += loss.item()
+        if loss.item()>3:
+            print(loss.item())
         valid_preds.append(outputs.sigmoid().detach().cpu().numpy())
     final_loss /= len(dataloader)
     valid_preds = np.concatenate(valid_preds)
@@ -122,7 +126,7 @@ def inference_fn(model, dataloader, device):
         inputs = data['x'].to(device)
         with torch.no_grad():
             outputs = model(inputs)
-        outputs = torch.clamp(outputs, min=-5.0, max=5.0)
+        #outputs = torch.clamp(outputs, min=-5.0, max=5.0)
         preds.append(outputs.sigmoid().detach().cpu().numpy())
     preds = np.concatenate(preds)
     return preds
