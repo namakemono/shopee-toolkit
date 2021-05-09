@@ -4,7 +4,9 @@ import gc
 import Levenshtein
 import networkx as nx
 import igraph
+import re
 from .memory_reduction import reduce_mem_usage
+from .text_embeddings_tfidf import clean_text
 
 def to_edit_distance(row:dict) -> float:
     a = row["posting_id_phash"]
@@ -147,15 +149,52 @@ def add_graph_features(pair_df:pd.DataFrame, graph_weight:str):
     return pair_df
 
 
+
+def add_unit_features(
+    df,
+    pair_df,
+    units_names:list
+):
+    def extract_num_unit(text, unit):
+        str_nums = re.findall('(\d+)'+ re.escape(unit), text)
+        int_nums = set([int(s) for s in str_nums])
+        return int_nums
+    texts = df["title"].apply(clean_text)
+    for unit in units_names:
+        print(unit)
+        num_unit_set = texts.apply(extract_num_unit, unit=unit)
+        num_unit_set_dict = dict(zip(df["posting_id"].values, num_unit_set))
+        pid_num_unit_set = pair_df["posting_id"].map(num_unit_set_dict)
+        cpid_num_unit_set = pair_df["candidate_posting_id"].map(num_unit_set_dict)
+        condition_pid = pid_num_unit_set.str.len()>0
+        condition_cpid = cpid_num_unit_set.str.len()>0
+        pair_df.loc[~(condition_pid&condition_cpid), unit] = 0 # 両方に値がない
+        pair_df.loc[(condition_pid&condition_cpid), unit] = -1 # 両方に何かしらの値があるのに違う
+        pair_df.loc[(pid_num_unit_set & cpid_num_unit_set), unit] = 1 # 共通の値がある (一つ前の部分集合)
+
 def add_all_features(
     train_df:pd.DataFrame,
     test_df:pd.DataFrame,
     pair_df:pd.DataFrame,
     use_graph_features:bool,
-    graph_weight:str="feat_effnet-b0_256x256_x_feat_tfidf-v1"
+    use_units_features:bool,
+    graph_weight:str="feat_effnet-b0_256x256_x_feat_tfidf-v1",
+    units_names:list=[
+                    "liter",
+                    "ml",
+                    "gram",
+                    "kg",
+                    "ampere",
+                    "volt",
+                    "inch",
+                    "cm",
+                    "mm",
+                    "meter",
+            ]
 ):
     df = pd.concat([train_df, test_df]).reset_index(drop=True)
     # 特徴量の追加
+    add_unit_features(df, pair_df, units_names)
     to_image_phash = df.set_index("posting_id")["image_phash"].to_dict()
     add_features(pair_df, to_image_phash)
     if use_graph_features:
