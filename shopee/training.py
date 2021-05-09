@@ -86,7 +86,7 @@ def run(
         clf = xgb.XGBClassifier(
             objective       = "binary:logistic",
             max_depth       = 6,
-            n_estimators    = 1000
+            n_estimators    = 1000,
         )
         clf.fit(
             X_train, y_train,
@@ -208,9 +208,11 @@ def train(
 
             clf = xgb.XGBClassifier(
                 objective       = "binary:logistic",
-                max_depth       = 6,
-                n_estimators    = 1000
+                max_depth       = 5,                    # 6, 
+                n_estimators    = 1463,                 # 1000,     
+                learning_rate   = 0.2832336307209388
             )
+            print(clf)
             clf.fit(
                 X_train, y_train,
                 eval_set=[

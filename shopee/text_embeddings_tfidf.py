@@ -14,7 +14,8 @@ def get_text_embeddings(df:pd.DataFrame, use_translate:bool=True) -> np.ndarray:
     embeddings = TfidfVectorizer(
         stop_words='english',
         binary=True,
-        max_features=25000
+        max_features=25000,
+        token_pattern='\w+'
     ).fit_transform(texts)
     print("vocab size: %d" % embeddings.shape[1])
     return embeddings

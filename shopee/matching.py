@@ -108,6 +108,8 @@ def make_candidates(
             )
         embeddings_list.append(embeddings)
 
+
+
     # 候補点の近傍となる要素を抽出
     indices_list = []
     for embeddings in embeddings_list:
