@@ -9,6 +9,8 @@ import Levenshtein
 import shopee
 from .feature_extraction import to_edit_distance, add_features, add_graph_features
 from .model_neuralnet import NeuralNet
+from catboost import CatBoostClassifier
+from catboost import Pool
 
 def run(
     train_df:pd.DataFrame,
@@ -226,6 +228,18 @@ def train(
             valid_index = train_pair_df[(train_pair_df["fold_pid"] % num_kfolds) == kfold_index].index
             oof[valid_index] = clf.predict_proba(X[valid_index])[:,1]
             y_preda = clf.predict_proba(X_test)[:,1]
+            y_preda_list.append(y_preda)
+
+        elif model_name=="cat":
+            train_pool = Pool(X_train, label=y_train)
+            model = CatBoostClassifier(iterations=1000,learning_rate=0.011730134049031867,depth=10) #調整可能
+            model.fit(train_pool, verbose=False)
+            # pidがvalidを含む項目を全て予測に入れる
+            valid_index = train_pair_df[(train_pair_df["fold_pid"] % num_kfolds) == kfold_index].index
+            valid_pool = Pool(X[valid_index], label=y[valid_index])
+            test_pool = Pool(X_test)
+            oof[valid_index] = model.predict_proba(valid_pool)[:,1]
+            y_preda = model.predict_proba(test_pool)[:,1]
             y_preda_list.append(y_preda)
 
         elif model_name=="nn":
