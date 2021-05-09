@@ -1,4 +1,5 @@
 from . import utils
+from . import memory_reduction
 from . import translation
 from . import normalization
 from . import memory_reduction

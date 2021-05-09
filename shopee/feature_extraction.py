@@ -4,6 +4,7 @@ import gc
 import Levenshtein
 import networkx as nx
 import igraph
+from .memory_reduction import reduce_mem_usage
 
 def to_edit_distance(row:dict) -> float:
     a = row["posting_id_phash"]
@@ -111,6 +112,8 @@ def add_graph_features(pair_df:pd.DataFrame, graph_weight:str):
     #pair_df["transitivity_local_undirected_diff"] = (pair_df["transitivity_local_undirected_pid"] /(pair_df["transitivity_local_undirected_cpid"]+eps))
     del transitivity_local_undirected_dict
     _ = gc.collect()
+
+    reduce_mem_usage(pair_df)
 
     # 近傍のsetを作成
     print(" making neighbors set")
