@@ -3,9 +3,14 @@ import unidecode
 import numpy as np
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
+from .translation import translate_indo_to_eng, translate_eng_to_indo
 
-def get_text_embeddings(df:pd.DataFrame) -> np.ndarray:
+def get_text_embeddings(df:pd.DataFrame, use_translate:bool=True) -> np.ndarray:
     texts = df["title"].apply(clean_text)
+    if use_translate:
+        print("translate indo to eng.")
+        texts = texts.apply(translate_indo_to_eng) # 性能が+0.0001改善?
+        # texts = texts.apply(translate_eng_to_indo) # 性能悪化する
     embeddings = TfidfVectorizer(
         stop_words='english',
         binary=True,
