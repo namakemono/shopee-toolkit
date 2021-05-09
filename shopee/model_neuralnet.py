@@ -109,12 +109,6 @@ def valid_fn(model, loss_fn, dataloader, device):
         outputs = model(inputs)
         outputs = torch.clamp(outputs, min=-5.0, max=5.0)
         loss = loss_fn(outputs, targets)
-        if loss.item()>5.:
-            print(torch.max(outputs,axis=0))
-            print(torch.max(outputs,axis=1))
-            print(loss.item())
-            print(outputs)
-            print(targets)
         final_loss += loss.item()
         valid_preds.append(outputs.sigmoid().detach().cpu().numpy())
     final_loss /= len(dataloader)
