@@ -232,7 +232,8 @@ def train(
 
         elif model_name=="cat":
             train_pool = Pool(X_train, label=y_train)
-            model = CatBoostClassifier(iterations=1000,learning_rate=0.011730134049031867,depth=10) #調整可能
+            #model = CatBoostClassifier(iterations=1000,learning_rate=0.011730134049031867,depth=10) #調整可能
+            model = CatBoostClassifier(iterations=1000,learning_rate=0.021730134049031867,depth=8) #調整可能
             model.fit(train_pool, verbose=False)
             # pidがvalidを含む項目を全て予測に入れる
             valid_index = train_pair_df[(train_pair_df["fold_pid"] % num_kfolds) == kfold_index].index
