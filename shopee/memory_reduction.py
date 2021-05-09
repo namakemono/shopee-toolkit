@@ -1,17 +1,22 @@
+import numpy as np
+import pandas as pd
+
 def reduce_mem_usage(props):
-    start_mem_usg = props.memory_usage().sum() / 1024**2 
+    start_mem_usg = props.memory_usage().sum() / 1024**2
     print("Memory usage of properties dataframe is :",start_mem_usg," MB")
-    NAlist = [] # Keeps track of columns that have missing values filled in. 
+    #NAlist = [] # Keeps track of columns that have missing values filled in.
     for col in props.columns:
         if props[col].dtype != object:  # Exclude strings
             # make variables for Int, max and min
             IsInt = False
             mx = props[col].max()
             mn = props[col].min()
+            '''
             # Integer does not support NA, therefore, NA needs to be filled
-            if not np.isfinite(props[col]).all(): 
+            if not np.isfinite(props[col]).all():
                 NAlist.append(col)
-                props[col].fillna(mn-1,inplace=True)  
+                props[col].fillna(mn-1,inplace=True)
+            '''
             # test if column can be converted to an integer
             asint = props[col].fillna(0).astype(np.int64)
             result = (props[col] - asint)
@@ -37,18 +42,15 @@ def reduce_mem_usage(props):
                     elif mn > np.iinfo(np.int32).min and mx < np.iinfo(np.int32).max:
                         props[col] = props[col].astype(np.int32)
                     elif mn > np.iinfo(np.int64).min and mx < np.iinfo(np.int64).max:
-                        props[col] = props[col].astype(np.int64)    
+                        props[col] = props[col].astype(np.int64)
             # Make float datatypes 32 bit
             else:
                 props[col] = props[col].astype(np.float32)
             # Print new column type
-    
+
     # Print final result
     print("___MEMORY USAGE AFTER COMPLETION:___")
-    mem_usg = props.memory_usage().sum() / 1024**2 
+    mem_usg = props.memory_usage().sum() / 1024**2
     print("Memory usage is: ",mem_usg," MB")
     print("This is ",100*mem_usg/start_mem_usg,"% of the initial size")
-    return props, NAlist
-
-
-
+   #return props, NAlist
