@@ -56,10 +56,10 @@ def get_entries():
             id                  = "effnet-b3_256x256-kf0",
             classname           = None,
             model_type          = "pytorch-arcface",
-            weights_filepath    = "../input/effnetb3-256x256-arcface/model_efficientnet_b3_IMG_SIZE_256_arcface_even2odd.bin",
+            weights_filepath    = "../input/effnetb3-256x256-arcface/effnetb3-256x256-arcface/model_efficientnet_b3_IMG_SIZE_256_arcface_even2odd.bin",
             image_size          = 256,
             preprocess_input    = tf.keras.applications.efficientnet.preprocess_input,
-            train_embeddings_filepath = "../input/effnetb3-256x256-arcface/train-embeddings-effnet-b3_256x256-kf0.npy"
+            train_embeddings_filepath = "../input/effnetb3-256x256-arcface/effnetb3-256x256-arcface/train-embeddings-effnet-b3_256x256-kf0.npy"
         ),
         ImageEntry(
             id                  = "effnet-b0_512x512",
@@ -144,5 +144,3 @@ def get_entry_by_id(id):
         if entry.id == id:
             return entry
     raise ValueError(f"Undefined entry id: {id}")
-
-
