@@ -66,7 +66,7 @@ class Config:
         'easy_margin':False,
         'ls_eps':0.0,
         'theta_zero':0.785,
-        'pretrained':True,
+        'pretrained':False,
     }
 
 
