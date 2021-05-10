@@ -77,7 +77,10 @@ class Config:
         self.dim = (image_size, image_size)
         self.weights_filepath = weights_filepath
 
-config = Config()
+config = Config(
+    image_size=256,
+    weights_filepath="../input/effnetb3-256x256-arcface/train-embeddings-effnet-b3_256x256-kf0.npy"
+)
 
 class ShopeeDataset(Dataset):
     def __init__(self, csv, transforms=None):
@@ -242,6 +245,9 @@ def get_valid_transforms():
     )
 
 def get_image_embeddings(df:pd.DataFrame, image_size:int, weights_filepath:str) -> np.ndarray:
+    config.dim = (image_size, image_size)
+    config.weights_filepath = weights_filepath
+
     #Defining dataloader
     valid_dataset = ShopeeDataset(
             csv=df,
@@ -261,7 +267,6 @@ def get_image_embeddings(df:pd.DataFrame, image_size:int, weights_filepath:str) 
     device = config.device
 
     #Defining model
-    config = Config(weights_filepath=weights_filepath)
     model = ShopeeNet(**config.model_params)
     model.load_state_dict(torch.load(weights_filepath))
     model = model.to(device)

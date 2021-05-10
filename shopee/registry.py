@@ -54,7 +54,7 @@ def get_entries():
         # https://www.kaggle.com/namakemono/effnetb3-256x256-arcface-pytorch
         ImageEntry(
             id                  = "effnet-b3_256x256-kf0",
-            classname           = None, # TODO(nishimori-m): ここをpytorch版に修正する
+            classname           = None,
             model_type          = "pytorch-arcface",
             weights_filepath    = "../input/effnetb3-256x256-arcface/model_efficientnet_b3_IMG_SIZE_256_arcface_even2odd.bin",
             image_size          = 256,
