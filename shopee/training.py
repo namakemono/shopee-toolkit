@@ -107,9 +107,9 @@ def train(
         is_even_pid = train_pair_df["fold_pid"] % 2 == 0
         is_even_cpid = train_pair_df["fold_cpid"] % 2 == 0
         valid_index = train_pair_df[
-            (pid_valid & cpid_valid)|
-            (pid_valid & cpid_test & ~is_even_pid)|
-            (pid_test & pid_valid & ~is_even_cpid)|
+            (pid_valid & cpid_valid) |
+            (pid_valid & cpid_test & ~is_even_pid) |
+            (pid_test & cpid_valid & ~is_even_cpid)
         ].index
 
         if model_name=="xgb":
