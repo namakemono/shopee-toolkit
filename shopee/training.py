@@ -80,15 +80,17 @@ def train(
             cpid_train = train_pair_df["fold_cpid"].isin(train_fold_list)
             cpid_valid = train_pair_df["fold_cpid"] % num_kfolds == kfold_index
             cpid_test = train_pair_df["candidate_posting_id"].str.contains("test_", na=False)
+
+            is_even_pid = train_pair_df["fold_pid"] % 2 == 0
+            is_even_cpid = train_pair_df["fold_cpid"] % 2 == 0
+
             train_index = train_pair_df[
                 (pid_train & cpid_train) |
-                (pid_train & cpid_test) |
-                (pid_test & cpid_train)
+                (pid_train & cpid_test & ~is_even_pid) |
+                (pid_test & cpid_train & ~is_even_cpid)
             ].index
             valid_index = train_pair_df[
-                (pid_valid & cpid_valid) |
-                (pid_valid & cpid_test) |
-                (pid_test & cpid_valid)
+                (pid_valid & cpid_valid)
             ].index
 
         else: # pidとcpidの反転例が存在しちゃってまずいペア
@@ -97,6 +99,18 @@ def train(
 
         X_train, X_valid = X[train_index], X[valid_index]
         y_train, y_valid = y[train_index], y[valid_index]
+
+        pid_valid = train_pair_df["fold_pid"] % num_kfolds == kfold_index
+        pid_test = train_pair_df["posting_id"].str.contains("test_", na=False)
+        cpid_valid = train_pair_df["fold_cpid"] % num_kfolds == kfold_index
+        cpid_test = train_pair_df["candidate_posting_id"].str.contains("test_", na=False)
+        is_even_pid = train_pair_df["fold_pid"] % 2 == 0
+        is_even_cpid = train_pair_df["fold_cpid"] % 2 == 0
+        valid_index = train_pair_df[
+            (pid_valid & cpid_valid)|
+            (pid_valid & cpid_test & ~is_even_pid)|
+            (pid_test & pid_valid & ~is_even_cpid)|
+        ].index
 
         if model_name=="xgb":
             # 正例の重みを weight_rate, 不例を1にする
@@ -128,7 +142,6 @@ def train(
                 sample_weight_eval_set  = sample_weight_eval_set,
             )
             # pidがvalidを含む項目を全て予測に入れる
-            valid_index = train_pair_df[(train_pair_df["fold_pid"] % num_kfolds) == kfold_index].index
             oof[valid_index] = clf.predict_proba(X[valid_index])[:,1]
             y_preda = clf.predict_proba(X_test)[:,1]
             y_preda_list.append(y_preda)
@@ -144,7 +157,6 @@ def train(
             #model = CatBoostClassifier( iterations=1000,learning_rate=0.021730134049031867, depth=8,         )
             model.fit(train_pool, verbose=True,metric_period=100)
             # pidがvalidを含む項目を全て予測に入れる
-            valid_index = train_pair_df[(train_pair_df["fold_pid"] % num_kfolds) == kfold_index].index
             valid_pool = Pool(X[valid_index], label=y[valid_index])
             test_pool = Pool(X_test)
             oof[valid_index] = model.predict_proba(valid_pool)[:,1]
@@ -153,8 +165,7 @@ def train(
 
         elif model_name=="nn":
             nn_params["weight_rate"] = weight_rate
-            # pidがvalidを含む項目を全て予測に入れる
-            allvalid_index = train_pair_df[(train_pair_df["fold_pid"] % num_kfolds) == kfold_index].index
+            allvalid_index = valid_index
             X_allvalid = X[allvalid_index]
             print("X_train:",len(X_train), "X_valid:",len(X_valid)," X_allvalid:", len(X_allvalid))
 
