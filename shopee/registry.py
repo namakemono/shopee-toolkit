@@ -19,12 +19,12 @@ class TextEntry:
         }
 
 class ImageEntry:
-    def __init__(self, 
-        id:str, 
-        classname, 
-        model_type:str, 
-        weights_filepath:str, 
-        image_size:int, 
+    def __init__(self,
+        id:str,
+        classname,
+        model_type:str,
+        weights_filepath:str,
+        image_size:int,
         preprocess_input
     ):
         self.id = id
@@ -47,6 +47,15 @@ class ImageEntry:
 
 def get_entries():
     return [
+        ImageEntry(
+            id                  = "effnet-b3_512x512-kf0",
+            classname           = tf.keras.applications.EfficientNetB3,
+            model_type          = "keras-origin",
+            # TODO(nishimori-m): ここを b3 w/ arcface(kf:0)に変える
+            weights_filepath    = "../input/all-in-one-packages/models/effnet-b3.h5",
+            image_size          = 512,
+            preprocess_input    = tf.keras.applications.efficientnet.preprocess_input
+        ),
         ImageEntry(
             id                  = "effnet-b0_512x512",
             classname           = tf.keras.applications.EfficientNetB0,
