@@ -5,7 +5,7 @@ import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from .translation import translate_indo_to_eng, translate_eng_to_indo
 
-def get_text_embeddings(df:pd.DataFrame, use_translate:bool=True) -> np.ndarray:
+def get_text_embeddings(df:pd.DataFrame, use_translate:bool=False) -> np.ndarray:
     texts = df["title"].apply(clean_text)
     if use_translate:
         print("translate indo to eng.")
