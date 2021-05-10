@@ -40,7 +40,6 @@ import shopee.registry
 class Config:
     debug = False
     BASE_DIR = '../input'
-    dim = (256, 256)
     num_workers = 4
     batch_size = 32
     epochs = 10
@@ -71,7 +70,11 @@ class Config:
     }
 
 
-    def __init__(self, weights_filepath=None):
+    def __init__(self,
+        image_size:int, # e.g. 256, 512
+        weights_filepath:str
+    ):
+        self.dim = (image_size, image_size)
         self.weights_filepath = weights_filepath
 
 config = Config()
