@@ -19,21 +19,25 @@ class TextEntry:
         }
 
 class ImageEntry:
-    def __init__(self, 
-        id:str, 
-        classname, 
-        model_type:str, 
-        weights_filepath:str, 
-        image_size:int, 
-        preprocess_input
+    def __init__(self,
+        id:str,
+        classname,
+        model_type:str,
+        weights_filepath:str,
+        image_size:int,
+        preprocess_input,
+        train_embeddings_filepath:str=None,
     ):
         self.id = id
         self.classname = classname
         self.model_type = model_type
         self.weights_filepath = weights_filepath
         self.image_size = image_size
-        self.train_embeddings_filepath = f"../input/shopee-train-embeddings/train-embeddings-{self.id}.npy"
         self.preprocess_input = preprocess_input
+        if train_embeddings_filepath is None:
+            self.train_embeddings_filepath = f"../input/shopee-train-embeddings/train-embeddings-{self.id}.npy"
+        else:
+            self.train_embeddings_filepath = train_embeddings_filepath
 
     def to_dict(self):
         return {
@@ -47,6 +51,16 @@ class ImageEntry:
 
 def get_entries():
     return [
+        # https://www.kaggle.com/namakemono/effnetb3-256x256-arcface-pytorch
+        ImageEntry(
+            id                  = "effnet-b3_256x256-kf0",
+            classname           = None,
+            model_type          = "pytorch-arcface",
+            weights_filepath    = "../input/effnetb3-256x256-arcface/model_efficientnet_b3_IMG_SIZE_256_arcface_even2odd.bin",
+            image_size          = 256,
+            preprocess_input    = tf.keras.applications.efficientnet.preprocess_input,
+            train_embeddings_filepath = "../input/effnetb3-256x256-arcface/train-embeddings-effnet-b3_256x256-kf0.npy"
+        ),
         ImageEntry(
             id                  = "effnet-b0_512x512",
             classname           = tf.keras.applications.EfficientNetB0,
