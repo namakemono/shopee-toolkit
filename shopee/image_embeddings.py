@@ -19,8 +19,17 @@ def get_image_embeddings(
     entry_id: str,
     df: pd.DataFrame,
 ):
-    return shopee.image_embeddings_keras.get_image_embeddings(
-        entry_id        = entry_id, 
-        df              = df,
-    )
-
+    entry = shopee.registry.get_entry_by_id(entry_id)
+    if entry.model_type == "keras-origin":
+        return shopee.image_embeddings_keras.get_image_embeddings(
+            entry_id        = entry_id,
+            df              = df,
+        )
+    elif entry.model_type == "pytorch-arcface":
+        return shopee.image_embeddings_pytorch.get_image_embeddings(
+            df              = df,
+            image_size      = entry.image_size,
+            weights_filepath= entry.weights_filepath,
+        )
+    else:
+        raise ValueError(f"Undefined model type: {entry.model_type}")

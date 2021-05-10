@@ -25,15 +25,19 @@ class ImageEntry:
         model_type:str,
         weights_filepath:str,
         image_size:int,
-        preprocess_input
+        preprocess_input,
+        train_embeddings_filepath:str=None,
     ):
         self.id = id
         self.classname = classname
         self.model_type = model_type
         self.weights_filepath = weights_filepath
         self.image_size = image_size
-        self.train_embeddings_filepath = f"../input/shopee-train-embeddings/train-embeddings-{self.id}.npy"
         self.preprocess_input = preprocess_input
+        if train_embeddings_filepath is None:
+            self.train_embeddings_filepath = f"../input/shopee-train-embeddings/train-embeddings-{self.id}.npy"
+        else:
+            self.train_embeddings_filepath = train_embeddings_filepath
 
     def to_dict(self):
         return {
@@ -47,14 +51,15 @@ class ImageEntry:
 
 def get_entries():
     return [
+        # https://www.kaggle.com/namakemono/effnetb3-256x256-arcface-pytorch
         ImageEntry(
-            id                  = "effnet-b3_512x512-kf0",
-            classname           = tf.keras.applications.EfficientNetB3,
-            model_type          = "keras-origin",
-            # TODO(nishimori-m): ここを b3 w/ arcface(kf:0)に変える
-            weights_filepath    = "../input/all-in-one-packages/models/effnet-b3.h5",
-            image_size          = 512,
-            preprocess_input    = tf.keras.applications.efficientnet.preprocess_input
+            id                  = "effnet-b3_256x256-kf0",
+            classname           = None, # TODO(nishimori-m): ここをpytorch版に修正する
+            model_type          = "pytorch-arcface",
+            weights_filepath    = "../input/effnetb3-256x256-arcface-pytorch/model_efficientnet_b3_IMG_SIZE_256_arcface_even2odd.bin",
+            image_size          = 256,
+            preprocess_input    = tf.keras.applications.efficientnet.preprocess_input,
+            train_embeddings_filepath = "../input/effnetb3-256x256-arcface-pytorch/oof_df.csv"
         ),
         ImageEntry(
             id                  = "effnet-b0_512x512",

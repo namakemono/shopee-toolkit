@@ -38,13 +38,23 @@ from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, CosineAnnealin
 import shopee.registry
 
 class Config:
+    debug = False
     BASE_DIR = '../input'
     dim = (256, 256)
     num_workers = 4
-    batch_size = 64
+    batch_size = 32
+    epochs = 10
+    seed = 100
+    n_fold = 2
+    trn_fold = [0,1]
+    lr = 3e-4
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    # TODO(nishimori-m): 重みのパスを追加する
-    weights_filepath = "" # shopee.registry.get_value("effnet_b3_arcface_256x256")
+    scheduler = 'CosineAnnealingWarmRestarts' #['CosineAnnealingLR', 'ReduceLROnPlateau']
+    patience=4 # ReduceLROnPlateau
+    eps=1e-6 # ReduceLROnPlateau
+    T_max=10 # CosineAnnealingLR
+    T_0=4 # CosineAnnealingWarmRestarts
+    min_lr=1e-6
     model_params = {
         'n_classes':11014,
         'model_name': 'efficientnet_b3', #'resnext50_32x4d'
@@ -57,8 +67,9 @@ class Config:
         'easy_margin':False,
         'ls_eps':0.0,
         'theta_zero':0.785,
-        'pretrained':False
+        'pretrained':True,
     }
+
 
     def __init__(self, weights_filepath=None):
         self.weights_filepath = weights_filepath
@@ -77,11 +88,11 @@ class ShopeeDataset(Dataset):
         row = self.csv.iloc[index]
         image = cv2.imread(row.filepath)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        
+
         if self.augmentations:
             augmented = self.augmentations(image=image)
-            image = augmented['image']       
-        
+            image = augmented['image']
+
         return image
 
 
@@ -100,7 +111,7 @@ class ArcMarginProduct(nn.Module):
         self.sin_m = math.sin(m)
         self.th = math.cos(math.pi - m)
         self.mm = math.sin(math.pi - m) * m
-        
+
     def forward(self, input, label):
         # --------------------------- cos(theta) & phi(theta) ---------------------------
         cosine = F.linear(F.normalize(input), F.normalize(self.weight))
@@ -127,14 +138,14 @@ class ShopeeNet(nn.Module):
     def __init__(self, n_classes, model_name='resnext50_32x4d', use_fc=False, fc_dim=512, dropout=0.0,
                  loss_module='softmax', s=30.0, margin=0.50, easy_margin=False,ls_eps=0.0, theta_zero=0.785,
                  pretrained=True):
-        
+
         super(ShopeeNet, self).__init__()
         print('Building Model Backbone for {} model'.format(model_name))
-        
+
         self.model_name = model_name
-        
+
         self.backbone = timm.create_model(model_name, pretrained=pretrained)
-        
+
         if 'efficient' in model_name:
             final_in_features = self.backbone.classifier.in_features
             self.backbone.classifier = nn.Identity()
@@ -150,12 +161,12 @@ class ShopeeNet(nn.Module):
             final_in_features = self.backbone.head.in_features
             self.backbone.head = nn.Identity()
         else:
-            raise Exception('unknown model found...')        
-        
+            raise Exception('unknown model found...')
+
         self.pooling =  nn.AdaptiveAvgPool2d(1)
-        
+
         self.use_fc = use_fc
-        
+
         if self.use_fc:
             self.dropout = nn.Dropout(p=dropout)
             self.fc = nn.Linear(final_in_features, fc_dim)
@@ -164,7 +175,7 @@ class ShopeeNet(nn.Module):
             final_in_features = fc_dim
 
         self.loss_module = loss_module
-        
+
         if self.loss_module == 'arcface':
             self.final = ArcMarginProduct(final_in_features, n_classes,
                                           s=s, m=margin, easy_margin=False, ls_eps=ls_eps)
@@ -174,7 +185,7 @@ class ShopeeNet(nn.Module):
             self.final = AdaCos(final_in_features, n_classes, m=margin, theta_zero=theta_zero)
         else:
             self.final = nn.Linear(final_in_features, n_classes)
-            
+
     def _init_params(self):
         nn.init.xavier_normal_(self.fc.weight)
         nn.init.constant_(self.fc.bias, 0)
@@ -188,7 +199,7 @@ class ShopeeNet(nn.Module):
         else:
             logits = self.final(feature)
         return feature, logits
-    
+
     def extract_feat(self, x):
         batch_size = x.shape[0]
         x = self.backbone(x)
@@ -203,19 +214,19 @@ class ShopeeNet(nn.Module):
 def eval_fn(data_loader,model,device):
     model.eval()
     tk0 = tqdm(enumerate(data_loader), total=len(data_loader))
-    
+
     embeds = []
-    
+
     with torch.no_grad():
         for bi,image in tk0:
             image = image.to(device)
             feature = model.extract_feat(image)
-            
+
             image_embeddings = feature.detach().cpu().numpy()
             embeds.append(image_embeddings)
-            
+
     image_embeddings = np.concatenate(embeds)
-            
+
     return image_embeddings
 
 def get_valid_transforms():
@@ -227,7 +238,7 @@ def get_valid_transforms():
         ]
     )
 
-def get_image_embeddings(df:pd.DataFrame, image_size:int) -> np.ndarray:
+def get_image_embeddings(df:pd.DataFrame, image_size:int, weights_filepath:str) -> np.ndarray:
     #Defining dataloader
     valid_dataset = ShopeeDataset(
             csv=df,
@@ -247,8 +258,9 @@ def get_image_embeddings(df:pd.DataFrame, image_size:int) -> np.ndarray:
     device = config.device
 
     #Defining model
+    config = Config(weights_filepath=weights_filepath)
     model = ShopeeNet(**config.model_params)
-    model.load_state_dict(torch.load(config.weights_filepath))
+    model.load_state_dict(torch.load(weights_filepath))
     model = model.to(device)
 
     image_embeddings = eval_fn(valid_loader, model, device)
