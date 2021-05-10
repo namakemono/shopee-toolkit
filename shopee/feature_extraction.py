@@ -194,7 +194,8 @@ def add_all_features(
 ):
     df = pd.concat([train_df, test_df]).reset_index(drop=True)
     # 特徴量の追加
-    add_unit_features(df, pair_df, units_names)
+    if use_units_features:
+        add_unit_features(df, pair_df, units_names)
     to_image_phash = df.set_index("posting_id")["image_phash"].to_dict()
     add_features(pair_df, to_image_phash)
     if use_graph_features:
